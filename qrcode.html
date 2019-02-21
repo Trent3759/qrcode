@@ -1,0 +1,148 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>QR Code Generator</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+	#qrcode {
+		margin:25px;
+		text-align:center;
+	}
+	#sliders {
+		margin:25px;
+		text-align:center;
+	}
+</style>
+</head>
+<body>
+
+
+  <section class="section">
+    <div class="container">
+    <h1 class="title">
+        TrentApps QR Generator
+    </h1>
+	<br/>
+	
+    <p class="subtitle">
+        A "no extra's" QR Code Generator. We dont track, spam, scam, or phish. This service is provided free of charge. 
+    </p>
+	  
+	<div class="field">
+		<div class="control">
+			<input id="codeinput" class="input is-info" type="text" placeholder="Input QR Information">
+			
+		</div>
+	</div>
+	<a class="button is-primary" onclick="genCode()">Generate</a>
+	
+	<div id="sliders">
+  <label>Red: <input id=redslider class="slider is-fullwidth is-danger" type=range max=255 value=0></label>
+  <label>Green: <input id=greenslider type=range max=255 value=0></label>
+  <label>Blue: <input id=blueslider type=range max=255 value=0></label>
+</div>
+	<div id="qrcode"></div>
+  </section>
+
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="jquery.qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.4/css/bulma.min.css">
+<script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+<script>
+
+var ctx = 'none';
+var rgbcolor = {r:0,g:0,b:0, a:255};
+document.getElementById("sliders").style.display = "None";
+
+function genCode(){
+	document.getElementById("sliders").style.display = "";
+	document.getElementById("qrcode").innerHTML = "";
+	var codeinput = document.getElementById("codeinput").value;
+	$('#qrcode').qrcode(codeinput);
+	document.getElementsByTagName("canvas")[0].id = "c";
+	ctx = c.getContext("2d");
+		
+	var imgd = ctx.getImageData(0, 0, 256, 256),
+		pix = imgd.data,
+		newColor = {r:0,g:0,b:0, a:0};
+	
+	for (var i = 0, n = pix.length; i <n; i += 4) {
+    var r = pix[i],
+            g = pix[i+1],
+            b = pix[i+2];
+
+        // If its white then change it
+        if(r == 255 && g == 255 && b == 255){ 
+            // Change the white to whatever.
+            pix[i] = newColor.r;
+            pix[i+1] = newColor.g;
+            pix[i+2] = newColor.b;
+            pix[i+3] = newColor.a;
+        }
+	}	
+	
+	ctx.putImageData(imgd, 0, 0);
+	
+	changeColor();
+	
+	img.src = c.toDataURL("image/png");
+}
+
+
+function changeColor() {
+	
+	
+	var imgd = ctx.getImageData(0, 0, 256, 256),
+		pix = imgd.data,
+		newColor = {r:0,g:0,b:0, a:0};
+		
+	
+	for (var i = 0, n = pix.length; i <n; i += 4) {
+    var r = pix[i],
+            g = pix[i+1],
+            b = pix[i+2];
+			a = pix[i + 3];
+
+        // If its black then change it so the color can be changed. 
+        if(a > 0){ 
+            // Change the white to whatever.
+            pix[i] = rgbcolor.r;
+            pix[i+1] = rgbcolor.g;
+            pix[i+2] = rgbcolor.b;
+            pix[i+3] = rgbcolor.a;
+        }
+	}	
+	
+	ctx.putImageData(imgd, 0, 0);
+	
+}
+
+
+
+$('#redslider').on('change', function(){
+    rgbcolor.r = $(this).val();
+	changeColor();
+});
+$('#greenslider').on('change', function(){
+    rgbcolor.g  = $(this).val();
+	changeColor();
+});
+$('#blueslider').on('change', function(){
+    rgbcolor.b  = $(this).val();
+	changeColor();
+});
+
+  
+
+
+
+
+
+
+
+
+
+</script>
+</html>

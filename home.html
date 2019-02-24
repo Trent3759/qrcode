@@ -38,11 +38,14 @@
 	<a class="button is-primary" onclick="genCode()">Generate</a>
 	
 	<div id="sliders">
-  <label>Red: <input id=redslider class="slider is-fullwidth is-danger" type=range max=255 value=0></label>
+		<label>Choose Color: <input id="colorChoice" type="color" value="#000000"></label>
+  <!--<label>Red: <input id=redslider class="slider is-fullwidth is-danger" type=range max=255 value=0></label>
   <label>Green: <input id=greenslider type=range max=255 value=0></label>
-  <label>Blue: <input id=blueslider type=range max=255 value=0></label>
+  <label>Blue: <input id=blueslider type=range max=255 value=0></label>-->
 </div>
 	<div id="qrcode"></div>
+	<!--<div id="colorPicker"></div>-->
+	<!--<button onclick="colorPicker()">Color Picker</button>-->
   </section>
 
 </body>
@@ -50,6 +53,10 @@
 <script type="text/javascript" src="jquery.qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.4/css/bulma.min.css">
 <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+<script
+  src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+  integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+  crossorigin="anonymous"></script>
 <script>
 
 var ctx = 'none';
@@ -85,18 +92,19 @@ function genCode(){
 	
 	ctx.putImageData(imgd, 0, 0);
 	
-	changeColor();
+	changeColor(document.getElementById('colorChoice').value);
 	
-	img.src = c.toDataURL("image/png");
 }
 
 
-function changeColor() {
-	
-	
-	var imgd = ctx.getImageData(0, 0, 256, 256),
-		pix = imgd.data,
-		newColor = {r:0,g:0,b:0, a:0};
+function changeColor(hex, range = {sx: 0, sy: 0, sw: 256, sh: 256}) {
+	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    rgbcolor.r = parseInt(result[1], 16);
+    rgbcolor.g = parseInt(result[2], 16);
+    rgbcolor.b = parseInt(result[3], 16);
+
+	var imgd = ctx.getImageData(range.sx, range.sy, range.sw, range.sh),
+		pix = imgd.data;
 		
 	
 	for (var i = 0, n = pix.length; i <n; i += 4) {
@@ -105,9 +113,8 @@ function changeColor() {
             b = pix[i+2];
 			a = pix[i + 3];
 
-        // If its black then change it so the color can be changed. 
         if(a > 0){ 
-            // Change the white to whatever.
+            // Change color to whatever you want. 
             pix[i] = rgbcolor.r;
             pix[i+1] = rgbcolor.g;
             pix[i+2] = rgbcolor.b;
@@ -115,31 +122,116 @@ function changeColor() {
         }
 	}	
 	
-	ctx.putImageData(imgd, 0, 0);
+	ctx.putImageData(imgd, range.sx, range.sy);
 	
+}
+
+function colorPicker(){
+	var elem = document.createElement("div");
+	elem.id = "picker";
+	elem.style.display = "block";
+	elem.style.position = "absolute";
+	elem.style.cursor = "pointer";
+	elem.style.top = "35%";
+	elem.style.left = "35%";
+	elem.style.zIndex = "199";
+	elem.style.height = "250px";
+	elem.style.width = elem.style.height;
+
+	var colorWheel = document.createElement("canvas");
+	colorWheel.id = "color_wheel";
+	colorWheel.style.height = "50px";
+	colorWheel.style.width = "400px";
+	colorWheel.style.marginTop = "5px";
+	colorWheel.style.marginLeft = colorWheel.style.marginTop;
+	colorWheel.style.borderRadius = "5px";
+	colorWheel.style.border = "5px solid #eff0f2";
+	colorWheel.style.boxShadow = "0px 0px 15px #888888";
+
+	elem.appendChild(colorWheel);
+
+
+	var graphics = colorWheel.getContext("2d");
+
+	function rgbToHex(r, g, b) {
+    if (r > 255 || g > 255 || b > 255)
+        throw "Invalid color component";
+    return ((r << 16) | (g << 8) | b).toString(16);
+	}
+
+	//draw the colors here. 
+
+	//step color by 51
+	var colorStep = 51;
+	for (var i = 0; i < 400; i++){
+		for (var r = 0; r < 255; r+=colorStep){
+			for (var g = 0; g < 255; g+=colorStep){
+				for (var b = 0; b < 255; b+=colorStep){
+					var hex = "#" + ("000000" + rgbToHex(r, g, b)).slice(-6);
+					changeColor(hex, {sx: i, sy: 0, sw: 1, sh: 256})
+				}
+			}
+		}
+	}
+
+	document.body.prepend(elem);
+
+	$( function() {
+    $("#picker").draggable();
+  } );
+
+  function findPos(obj) {
+    var curleft = 0, curtop = 0;
+    if (obj.offsetParent) {
+        do {
+            curleft += obj.offsetLeft;
+            curtop += obj.offsetTop;
+        } while (obj = obj.offsetParent);
+        return { x: curleft, y: curtop };
+    }
+    return undefined;
 }
 
 
 
-$('#redslider').on('change', function(){
-    rgbcolor.r = $(this).val();
-	changeColor();
+function getEventLocation(element,event){
+    // Relies on the getElementPosition function.
+    var pos = getElementPosition(element);
+    
+    return {
+    	x: (event.pageX - pos.x),
+      	y: (event.pageY - pos.y)
+    };
+}
+
+function getElementPosition(obj) {
+    var curleft = 0, curtop = 0;
+    if (obj.offsetParent) {
+        do {
+            curleft += obj.offsetLeft;
+            curtop += obj.offsetTop;
+        } while (obj = obj.offsetParent);
+        return { x: curleft, y: curtop };
+    }
+    return undefined;
+}
+
+  $('#color_wheel').mousemove(function(e) {
+    // Get the coordinates of the click
+    var eventLocation = getEventLocation(this,event);
+    // Get the data of the pixel according to the location generate by the getEventLocation function
+    var context = this.getContext('2d');
+    var pixelData = context.getImageData(eventLocation.x, eventLocation.y, 1, 1).data; 
 });
-$('#greenslider').on('change', function(){
-    rgbcolor.g  = $(this).val();
-	changeColor();
+
+}
+
+
+
+$('#colorChoice').on('change', function(){
+    hex = $(this).val();
+	changeColor(hex);
 });
-$('#blueslider').on('change', function(){
-    rgbcolor.b  = $(this).val();
-	changeColor();
-});
-
-  
-
-
-
-
-
 
 
 
